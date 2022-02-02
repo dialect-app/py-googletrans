@@ -74,32 +74,12 @@ def test_special_chars(translator):
     assert result.text == text
 
 
-def test_translate_list(translator):
-    args = (['test', 'exam'], 'ko', 'en')
-    translations = translator.translate(*args)
-
-    assert translations[0].text == u'테스트'
-    assert translations[1].text == u'시험'
-
-
 def test_detect_language(translator):
     ko = translator.detect(u'한국어')
     en = translator.detect('English')
-    rubg = translator.detect('тест')
 
     assert ko.lang == 'ko'
     assert en.lang == 'en'
-    assert rubg.lang == ['ru', 'bg']
-
-
-def test_detect_list(translator):
-    items = [u'한국어', ' English', 'тест']
-
-    result = translator.detect(items)
-
-    assert result[0].lang == 'ko'
-    assert result[1].lang == 'en'
-    assert result[2].lang == ['ru', 'bg']
 
 
 def test_src_in_special_cases(translator):
