@@ -1,4 +1,5 @@
 """A conversion module for googletrans"""
+import html
 import json
 import re
 
@@ -73,6 +74,17 @@ def format_json(original):
         converted = legacy_format_json(original)
 
     return converted
+
+
+def strip_html_tags(text):
+    """Strip html tags"""
+    if text is None:
+        return None
+
+    tags_re = re.compile(r'(<!--.*?-->|<[^>]*>)')
+    tags_removed = tags_re.sub('', text)
+    escaped = html.escape(tags_removed)
+    return escaped
 
 
 def rshift(val, n):

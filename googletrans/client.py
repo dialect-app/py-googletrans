@@ -4,28 +4,26 @@ A Translation module.
 
 You can translate text using this module.
 """
+import json
 import random
 import typing
-import re
-import json
 
-import httpcore
 import httpx
 from httpx import Timeout
 
 from googletrans import urls, utils
+from googletrans.constants import (DEFAULT_CLIENT_SERVICE_URLS,
+                                   DEFAULT_FALLBACK_SERVICE_URLS,
+                                   DEFAULT_RAISE_EXCEPTION, DEFAULT_USER_AGENT,
+                                   DUMMY_DATA, LANGCODES, LANGUAGES,
+                                   SPECIAL_CASES)
 from googletrans.gtoken import TokenAcquirer
-from googletrans.constants import (
-    DEFAULT_CLIENT_SERVICE_URLS,
-    DEFAULT_FALLBACK_SERVICE_URLS,
-    DEFAULT_USER_AGENT, LANGCODES, LANGUAGES, SPECIAL_CASES,
-    DEFAULT_RAISE_EXCEPTION, DUMMY_DATA
-)
-from googletrans.models import Translated, Detected, TranslatedPart
+from googletrans.models import Detected, Translated, TranslatedPart
 
 EXCLUDES = ('en', 'ca', 'fr')
 
 RPC_ID = 'MkEWBc'
+
 
 class Translator:
     """Google Translate ajax API implementation class
@@ -79,7 +77,7 @@ class Translator:
             self.client_type = 'gtx'
             pass
         else:
-            #default way of working: use the defined values from user app
+            # default way of working: use the defined values from user app
             self.service_urls = service_urls
             self.client_type = 'tw-ob'
             self.token_acquirer = TokenAcquirer(
@@ -91,7 +89,7 @@ class Translator:
         return json.dumps([[
             [
                 RPC_ID,
-                json.dumps([[text, src, dest, True],[None]], separators=(',', ':')),
+                json.dumps([[text, src, dest, True], [None]], separators=(',', ':')),
                 None,
                 'generic',
             ],
@@ -124,7 +122,7 @@ class Translator:
         return r.text, r
 
     def _translate_legacy(self, text, dest, src, override):
-        token = '' #dummy default value here as it is not used by api client
+        token = ''  # dummy default value here as it is not used by api client
         if self.client_type == 'webapp':
             token = self.token_acquirer.do(text)
 
@@ -217,18 +215,30 @@ class Translator:
         parsed = json.loads(data[0][2])
         # not sure
         should_spacing = parsed[1][0][0][3]
-        translated_parts = list(map(lambda part: TranslatedPart(part[0], part[1] if len(part) >= 2 else []), parsed[1][0][0][5]))
+        translated_parts = None
+        translated = None
+        try:
+            translated_parts = list(
+                map(lambda part: TranslatedPart(part[0], part[1] if len(part) >= 2 else []), parsed[1][0][0][5])
+            )
+        except TypeError:
+            translated_parts = [
+                TranslatedPart(
+                    parsed[1][0][1][0],
+                    [parsed[1][0][0][0], parsed[1][0][1][0]]
+                )
+            ]
         translated = (' ' if should_spacing else '').join(map(lambda part: part.text, translated_parts))
 
         if src == 'auto':
             try:
                 src = parsed[2]
-            except:
+            except TypeError:
                 pass
         if src == 'auto':
             try:
                 src = parsed[0][2]
-            except:
+            except TypeError:
                 pass
 
         # currently not available
@@ -237,19 +247,26 @@ class Translator:
         origin_pronunciation = None
         try:
             origin_pronunciation = parsed[0][0]
-        except:
+        except TypeError:
             pass
 
         pronunciation = None
         try:
             pronunciation = parsed[1][0][0][1]
-        except:
+        except TypeError:
+            pass
+
+        mistake = None
+        try:
+            mistake = parsed[0][1][0][0][1]
+        except TypeError:
             pass
 
         extra_data = {
             'confidence': confidence,
             'parts': translated_parts,
-            'origin_pronunciation': origin_pronunciation,
+            'possible-mistakes': [mistake, utils.strip_html_tags(mistake)],
+            'src-pronunciation': origin_pronunciation,
             'parsed': parsed,
         }
         result = Translated(src=src, dest=dest, origin=origin,
@@ -258,7 +275,6 @@ class Translator:
                             extra_data=extra_data,
                             response=response)
         return result
-
 
     def translate_legacy(self, text, dest='en', src='auto', **kwargs):
         """Translate text from source language to destination language
@@ -337,19 +353,19 @@ class Translator:
         # src passed is equal to auto.
         try:
             src = data[2]
-        except Exception:  # pragma: nocover
+        except TypeError:  # pragma: nocover
             pass
 
         pron = origin
         try:
             pron = data[0][1][-2]
-        except Exception:  # pragma: nocover
+        except TypeError:  # pragma: nocover
             pass
 
         if pron is None:
             try:
                 pron = data[0][1][2]
-            except:  # pragma: nocover
+            except TypeError:  # pragma: nocover
                 pass
 
         if dest in EXCLUDES and pron == origin:
@@ -365,7 +381,11 @@ class Translator:
 
     def detect(self, text: str):
         translated = self.translate(text, src='auto', dest='en')
-        result = Detected(lang=translated.src, confidence=translated.extra_data.get('confidence', None), response=translated._response)
+        result = Detected(
+            lang=translated.src,
+            confidence=translated.extra_data.get('confidence', None),
+            response=translated._response
+        )
         return result
 
     def detect_legacy(self, text, **kwargs):
@@ -419,7 +439,7 @@ class Translator:
             else:
                 src = ''.join(data[8][0])
                 confidence = data[8][-2][0]
-        except Exception:  # pragma: nocover
+        except TypeError:  # pragma: nocover
             pass
         result = Detected(lang=src, confidence=confidence, response=response)
 
