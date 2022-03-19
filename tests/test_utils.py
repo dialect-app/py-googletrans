@@ -16,26 +16,3 @@ def test_format_malformed_json():
 
     with raises(ValueError):
         utils.format_json(text)
-
-
-def test_rshift():
-    value, n = 1000, 3
-
-    result = utils.rshift(value, n)
-
-    assert result == 125
-
-
-def test_build_params_with_override():
-    params = utils.build_params(
-        client='',
-        query='',
-        src='',
-        dest='',
-        token='',
-        override={
-            'otf': '3',
-        },
-    )
-
-    assert params['otf'] == '3'

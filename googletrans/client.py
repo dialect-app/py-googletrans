@@ -77,12 +77,9 @@ class Translator:
 
         if use_fallback:
             self.service_urls = DEFAULT_FALLBACK_SERVICE_URLS
-            self.client_type = 'gtx'
-            pass
         else:
             # default way of working: use the defined values from user app
             self.service_urls = service_urls
-            self.client_type = 'tw-ob'
 
         self.raise_exception = raise_exception
 
@@ -122,30 +119,6 @@ class Translator:
                 r.status_code, self.service_urls))
 
         return r.text, r
-
-    @staticmethod
-    def _parse_extra_data(data):
-        response_parts_name_mapping = {
-            0: 'translation',
-            1: 'all-translations',
-            2: 'original-language',
-            5: 'possible-translations',
-            6: 'confidence',
-            7: 'possible-mistakes',
-            8: 'language',
-            11: 'synonyms',
-            12: 'definitions',
-            13: 'examples',
-            14: 'see-also',
-        }
-
-        extra = {}
-
-        for index, category in response_parts_name_mapping.items():
-            extra[category] = data[index] if (
-                index < len(data) and data[index]) else None
-
-        return extra
 
     def translate(self, text: str, dest='en', src='auto'):
         """Translate text from source language to destination language

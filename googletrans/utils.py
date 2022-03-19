@@ -4,31 +4,6 @@ import json
 import re
 
 
-def build_params(client, query, src, dest, token, override):
-    params = {
-        'client': client,
-        'sl': src,
-        'tl': dest,
-        'hl': dest,
-        'dt': ['at', 'bd', 'ex', 'ld', 'md', 'qca', 'rw', 'rm', 'ss', 't'],
-        'ie': 'UTF-8',
-        'oe': 'UTF-8',
-        'otf': 1,
-        'ssel': 0,
-        'tsel': 0,
-        'q': query,
-    }
-
-    if token != '':
-        params['tk'] = token
-
-    if override is not None:
-        for key, value in get_items(override):
-            params[key] = value
-
-    return params
-
-
 def legacy_format_json(original):
     # save state
     states = []
@@ -62,11 +37,6 @@ def legacy_format_json(original):
     return converted
 
 
-def get_items(dict_object):
-    for key in dict_object:
-        yield key, dict_object[key]
-
-
 def format_json(original):
     try:
         converted = json.loads(original)
@@ -85,9 +55,3 @@ def strip_html_tags(text):
     tags_removed = tags_re.sub('', text)
     escaped = html.escape(tags_removed)
     return escaped
-
-
-def rshift(val, n):
-    """python port for '>>>'(right shift with padding)
-    """
-    return (val % 0x100000000) >> n
